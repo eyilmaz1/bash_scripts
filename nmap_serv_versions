@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Get the IP address from the user
+echo "Enter an IP address to scan:"
+read ip_address
+
+# Run a full port scan to find all open ports
+echo "Looking for all open ports on $ip_address..."
+nmap $ip_address -p- -Pn > /dev/null
+# Put the results of just the numbers of open ports separated by a comma 
+open_ports=$(nmap -p- --open -T4 $ip_address | grep ^[0-9] | cut -d '/' -f 1 | tr '\n' ',' | sed s/,$//)
+
+# Run a service scan on the open ports and put the results into a file
+echo "Scanning open ports for service versions..."
+nmap $ip_address -p $open_ports -sV >> service_versions.txt
+
+# Get the number of lines in the file and delete the last 5 lines of the file to make it cleaner
+num_lines=$(wc -l < "service_versions.txt")
+first_line=$((num_lines-4))
+sed -i "${first_line},${num_lines}d" "service_versions.txt"
+
+echo "Opening the results of scan"
+cat service_versions.txt
+
+# .............................................................
+#          SAMPLE OUTPUT of service_versions.txt
+# .
+# Starting Nmap 7.93 ( https://nmap.org ) at 2023-02-21 18:18 EST
+# Nmap scan report for 192.168.132.129
+# Host is up (0.0057s latency).
+# .
+# PORT      STATE SERVICE     VERSION
+# 21/tcp    open  ftp         vsftpd 2.3.4
+# 22/tcp    open  ssh         OpenSSH 4.7p1 Debian 8ubuntu1 (protocol 2.0)
+# 23/tcp    open  telnet      Linux telnetd
+# 25/tcp    open  smtp        Postfix smtpd
+# 53/tcp    open  domain      ISC BIND 9.4.2
+# 80/tcp    open  http        Apache httpd 2.2.8 ((Ubuntu) DAV/2)
+# 111/tcp   open  rpcbind     2 (RPC #100000)
+# 139/tcp   open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+# 445/tcp   open  netbios-ssn Samba smbd 3.X - 4.X (workgroup: WORKGROUP)
+# 512/tcp   open  exec        netkit-rsh rexecd
+# 513/tcp   open  login       OpenBSD or Solaris rlogind
+# 514/tcp   open  tcpwrapped
+# 1099/tcp  open  java-rmi    GNU Classpath grmiregistry
