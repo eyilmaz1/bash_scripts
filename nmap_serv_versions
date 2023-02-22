@@ -42,4 +42,3 @@ cat service_versions.txt
 # 512/tcp   open  exec        netkit-rsh rexecd
 # 513/tcp   open  login       OpenBSD or Solaris rlogind
 # 514/tcp   open  tcpwrapped
-# 1099/tcp  open  java-rmi    GNU Classpath grmiregistry
