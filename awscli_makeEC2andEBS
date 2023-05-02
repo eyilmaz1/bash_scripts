@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Set the variables
+# Set the availability zone where you want to launch the EC2 instance and create the EBS volume.
+AVAILABILITY_ZONE="your-availability-zone"
+# Set the size of the EBS volume you want to create in GiB.
+VOLUME_SIZE=10
+# Set the type of EBS volume you want to create. This example uses the gp2 volume type.
+VOLUME_TYPE="gp2"
+# Set the device name that you want to use for the EBS volume on the EC2 instance. This example uses /dev/xvdf.
+DEVICE="/dev/xvdf"
+# Set the ID of the Amazon Machine Image (AMI) that you want to use for the EC2 instance. This example uses the Amazon Linux 2 LTS AMI ID.
+AMI_ID="ami-0c94855ba95c71c99"
+# Set the instance type that you want to use for the EC2 instance. This example uses the t2.micro instance type.
+INSTANCE_TYPE="t2.micro"
+# Set the ID of the security group that you want to use for the EC2 instance. Replace this with your own security group ID.
+SECURITY_GROUP_ID="sg-0123456789abcdef"
+# Set the name of the key pair that you want to use for the EC2 instance. Replace this with your own key pair name.
+KEY_NAME="your-key-pair-name"
+
+# Launch the EC2 instance
+INSTANCE_ID=$(aws ec2 run-instances \
+    --image-id ${AMI_ID} \
+    --instance-type ${INSTANCE_TYPE} \
+    --security-group-ids ${SECURITY_GROUP_ID} \
+    --key-name ${KEY_NAME} \
+    --block-device-mappings "[{\"DeviceName\":\"${DEVICE}\",\"Ebs\":{\"VolumeSize\":${VOLUME_SIZE},\"VolumeType\":\"${VOLUME_TYPE}\"}}]" \
+    --query 'Instances[0].InstanceId' \
+    --output text)
+echo "Launched EC2 instance ${INSTANCE_ID}"
+
+# Wait for the EC2 instance to be running
+aws ec2 wait instance-running --instance-ids ${INSTANCE_ID}
+echo "EC2 instance ${INSTANCE_ID} is running"
+
+# Create the EBS volume
+VOLUME_ID=$(aws ec2 create-volume --availability-zone ${AVAILABILITY_ZONE} --size ${VOLUME_SIZE} --volume-type ${VOLUME_TYPE} --query 'VolumeId' --output text)
+echo "Created EBS volume ${VOLUME_ID} in ${AVAILABILITY_ZONE}"
+
+# Wait for the EBS volume to be available
+aws ec2 wait volume-available --volume-ids ${VOLUME_ID}
+echo "EBS volume ${VOLUME_ID} is available"
+
+# Attach the EBS volume to the instance
+aws ec2 attach-volume --volume-id ${VOLUME_ID} --instance-id ${INSTANCE_ID} --device ${DEVICE}
+echo "Attached EBS volume ${VOLUME_ID} to instance ${INSTANCE_ID} as ${DEVICE}"
+
+# Wait for the EBS volume to be in use
+aws ec2 wait volume-in-use --filters Name=attachment.device,Values=${DEVICE}
+echo "EBS volume ${VOLUME_ID} is now in use as ${DEVICE}"
